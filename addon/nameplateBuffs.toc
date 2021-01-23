@@ -2,7 +2,7 @@
 ## Title: nameplateBuffs
 ## Version: 9.0.2
 ## Notes: Shows buffs/debuffs on nameplates
-## Author: FlyNeko, collinstevens
+## Author: FlyNeko (Original Author), collinstevens
 ## SavedVariables: nameplateBuffsDB
 
 libs\LibStub\LibStub.lua
