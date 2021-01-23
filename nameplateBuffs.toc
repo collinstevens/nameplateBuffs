@@ -1,8 +1,8 @@
-## Interface: 80205
+## Interface: 90002
 ## Title: nameplateBuffs
-## Version: 8.2.5
+## Version: 9.0.2
 ## Notes: Shows buffs/debuffs on nameplates
-## Author: FlyNeko
+## Author: FlyNeko, collinstevens
 ## SavedVariables: nameplateBuffsDB
 
 libs\LibStub\LibStub.lua
