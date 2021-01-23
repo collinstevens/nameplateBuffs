@@ -1,10 +1,10 @@
-local _, nameplateBuffs = ...
+local _, fPB = ...
 
 if GetLocale() ~= "frFR" then return end
 
 --You can help with translation at https://wow.curseforge.com/projects/nameplateBuffs/localization
 
-local L = nameplateBuffs.L
+local L = fPB.L
 
 L["Add new spell to list"] = "Ajouter nouveau sort"
 L["All"] = "Tout"

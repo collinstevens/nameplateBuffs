@@ -1,22 +1,22 @@
-local _, nameplateBuffs = ...
-local L = nameplateBuffs.L
+local _, fPB = ...
+local L = fPB.L
 
 local db = {}
-local UpdateAllNameplates = nameplateBuffs.UpdateAllNameplates
+local UpdateAllNameplates = fPB.UpdateAllNameplates
 
 local 	GetSpellInfo, tonumber, pairs, table_sort, table_insert =
 		GetSpellInfo, tonumber, pairs, table.sort, table.insert
 local	DISABLE = DISABLE
-local chatColor = nameplateBuffs.chatColor
-local linkColor = nameplateBuffs.linkColor
+local chatColor = fPB.chatColor
+local linkColor = fPB.linkColor
 
-function nameplateBuffs.OptionsOnEnable()
-	db = nameplateBuffs.db.profile
+function fPB.OptionsOnEnable()
+	db = fPB.db.profile
 
-	nameplateBuffs.BuildSpellList()
+	fPB.BuildSpellList()
 end
 
-local tooltip = tooltip or CreateFrame("GameTooltip", "nameplateBuffsScanSpellDescTooltip", UIParent, "GameTooltipTemplate")
+local tooltip = tooltip or CreateFrame("GameTooltip", "fPBScanSpellDescTooltip", UIParent, "GameTooltipTemplate")
 tooltip:Show()
 tooltip:SetOwner(UIParent, "ANCHOR_NONE")
 
@@ -39,7 +39,7 @@ local function CheckSort()
 	return false
 end
 
-nameplateBuffs.MainOptionTable = {
+fPB.MainOptionTable = {
 	name = L["Display options"],
 	type = "group",
 	childGroups = "tab",
@@ -124,11 +124,11 @@ nameplateBuffs.MainOptionTable = {
 						db.showOnlyInCombat = value
 						UpdateAllNameplates()
 						if value then
-							nameplateBuffs.RegisterCombat()
-							if not InCombatLockdown() then nameplateBuffs.Events:UnregisterEvent("UNIT_AURA") end
+							fPB.RegisterCombat()
+							if not InCombatLockdown() then fPB.Events:UnregisterEvent("UNIT_AURA") end
 						else
-							nameplateBuffs.UnregisterCombat()
-							nameplateBuffs.Events:RegisterEvent("UNIT_AURA")
+							fPB.UnregisterCombat()
+							fPB.Events:RegisterEvent("UNIT_AURA")
 						end
 					end,
 				},
@@ -284,14 +284,14 @@ nameplateBuffs.MainOptionTable = {
 					order = 10,
 					type = "select",
 					name = L["Font"],
-					values = nameplateBuffs.LSM:HashTable("font"),
+					values = fPB.LSM:HashTable("font"),
 					dialogControl = "LSM30_Font",
 					get = function()
 						return db.font
 					end,
 					set = function(info, value)
 						db.font = value
-						nameplateBuffs.font = nameplateBuffs.LSM:Fetch("font", value)
+						fPB.font = fPB.LSM:Fetch("font", value)
 						UpdateAllNameplates(true)
 					end,
 				},
@@ -354,14 +354,14 @@ nameplateBuffs.MainOptionTable = {
 					order = 17,
 					type = "select",
 					name = L["Font"],
-					values = nameplateBuffs.LSM:HashTable("font"),
+					values = fPB.LSM:HashTable("font"),
 					dialogControl = "LSM30_Font",
 					get = function()
 						return db.stackFont
 					end,
 					set = function(info, value)
 						db.stackFont = value
-						nameplateBuffs.stackFont = nameplateBuffs.LSM:Fetch("font", value)
+						fPB.stackFont = fPB.LSM:Fetch("font", value)
 						UpdateAllNameplates(true)
 					end,
 				},
@@ -387,7 +387,7 @@ nameplateBuffs.MainOptionTable = {
 				headerOther = {
 					order = 20,
 					type = "header",
-					name = L["Non-nameplateBuffs duration options"],
+					name = L["Non-fPB duration options"],
 				},
 				showStdCooldown = {
 					order = 21,
@@ -608,8 +608,8 @@ nameplateBuffs.MainOptionTable = {
 					set = function(info, value)
 						db[info[#info]] = value
 						for n, frame in ipairs(C_NamePlate.GetNamePlates()) do
-							if frame.nameplateBuffsiconsFrame and frame.nameplateBuffsiconsFrame.iconsFrame then
-								frame.nameplateBuffsiconsFrame:SetParent(value and WorldFrame or frame)
+							if frame.fPBiconsFrame and frame.fPBiconsFrame.iconsFrame then
+								frame.fPBiconsFrame:SetParent(value and WorldFrame or frame)
 							end
 						end
 					end,
@@ -872,7 +872,7 @@ nameplateBuffs.MainOptionTable = {
 					set = function(info, value)
 						if value then
 							db.fixNames = true
-							nameplateBuffs.FixNames() -- need to fire updates to see changes (change target for example)
+							fPB.FixNames() -- need to fire updates to see changes (change target for example)
 						else
 							db.fixNames = false
 						end
@@ -895,7 +895,7 @@ nameplateBuffs.MainOptionTable = {
 
 local newSpellName
 
-nameplateBuffs.SpellsTable = {
+fPB.SpellsTable = {
 	name = L["Specific spells"],
 	type = "group",
 	childGroups = "tree",
@@ -912,11 +912,11 @@ nameplateBuffs.SpellsTable = {
 						local spellName = GetSpellInfo(spellID)
 						if spellName then
 							newSpellName = spellName
-							nameplateBuffs.AddNewSpell(spellID)
+							fPB.AddNewSpell(spellID)
 						end
 					else
 						newSpellName = value
-						nameplateBuffs.AddNewSpell(newSpellName)
+						fPB.AddNewSpell(newSpellName)
 					end
 				end
 			end,
@@ -941,7 +941,7 @@ nameplateBuffs.SpellsTable = {
 			set = function(info,value)
 				db.showSpellID = value
 				if value then
-					nameplateBuffs.ShowSpellID()
+					fPB.ShowSpellID()
 				end
 			end,
 		},
@@ -980,8 +980,8 @@ local function SortSpellList(a,b)
 		end
 	end
 end
-function nameplateBuffs.BuildSpellList()
-	local spellTable = nameplateBuffs.SpellsTable.args
+function fPB.BuildSpellList()
+	local spellTable = fPB.SpellsTable.args
 	for item in pairs(spellTable) do
 		if item ~= "addSpell" and item ~= "blank" and item ~= "showSpellID" then
 			spellTable[item] = nil
@@ -1016,7 +1016,7 @@ function nameplateBuffs.BuildSpellList()
 			tooltip:SetHyperlink("spell:"..SpellID)
 			local lines = tooltip:NumLines()
 			if lines > 0 then
-				spellDesc = _G["nameplateBuffsScanSpellDescTooltipTextLeft"..lines]:GetText() or "??"
+				spellDesc = _G["fPBScanSpellDescTooltipTextLeft"..lines]:GetText() or "??"
 			end
 		else
 			spellDesc = L["No spell ID"]
@@ -1039,7 +1039,7 @@ function nameplateBuffs.BuildSpellList()
 			end,
 			set = function(info, value)
 				Spell[info[2]] = value
-				nameplateBuffs.BuildSpellList()
+				fPB.BuildSpellList()
 				UpdateAllNameplates()
 			end,
 			args = {
@@ -1097,7 +1097,7 @@ function nameplateBuffs.BuildSpellList()
 								local spellName = GetSpellInfo(spellID)
 								if spellName then
 									if spellID ~= Spell.spellID and spellName == Spell.name then	-- correcting or adding the id
-										nameplateBuffs.ChangeSpellID(s, spellID)
+										fPB.ChangeSpellID(s, spellID)
 									elseif spellID ~= Spell.spellID and spellName ~= Spell.name then
 										DEFAULT_CHAT_FRAME:AddMessage(spellID..chatColor..L[" It is ID of completely different spell "]..linkColor.."|Hspell:"..spellID.."|h["..GetSpellInfo(spellID).."]|h"..chatColor..L[". You can add it by using top editbox."])
 									end
@@ -1107,7 +1107,7 @@ function nameplateBuffs.BuildSpellList()
 							else
 								DEFAULT_CHAT_FRAME:AddMessage(tostring(spellID)..chatColor..L[" Incorrect ID"])
 							end
-						nameplateBuffs.BuildSpellList()
+						fPB.BuildSpellList()
 						UpdateAllNameplates()
 						end
 					end,
@@ -1123,7 +1123,7 @@ function nameplateBuffs.BuildSpellList()
 						else
 							Spell.checkID = value
 						end
-						nameplateBuffs.CacheSpells()
+						fPB.CacheSpells()
 						UpdateAllNameplates()
 					end,
 				},
@@ -1133,7 +1133,7 @@ function nameplateBuffs.BuildSpellList()
 					name = L["Remove spell"],
 					confirm = true,
 					func = function(info)
-						nameplateBuffs.RemoveSpell(s)
+						fPB.RemoveSpell(s)
 					end,
 				},
 			},

@@ -1,8 +1,8 @@
-local _, nameplateBuffs = ...
+local _, fPB = ...
 
 if GetLocale() ~= "ruRU" then return end
 
-local L = nameplateBuffs.L
+local L = fPB.L
 
 L[" ID changed "] = " ID изменен "
 L[" Incorrect ID"] = " Некорректный ID"
@@ -81,7 +81,7 @@ L["Nameplate's Anchor point"] = "Точка привязки к неймплей
 L["Neutrals"] = "Нейтральные"
 L["Never"] = "Никогда"
 L["No spell ID"] = "Нет spell ID"
-L["Non-nameplateBuffs duration options"] = "Не-nameplateBuffs настройки времени"
+L["Non-fPB duration options"] = "Не-fPB настройки времени"
 L["None"] = "Нет"
 L["Offset X"] = "Смещение по X"
 L["Offset Y"] = "Смещение по Y"

@@ -1,5 +1,5 @@
-local _, nameplateBuffs = ...
-function nameplateBuffs.ShowSpellID()
+local _, fPB = ...
+function fPB.ShowSpellID()
 	local hooksecurefunc, select, UnitBuff, UnitDebuff, UnitAura =
 		  hooksecurefunc, select, UnitBuff, UnitDebuff, UnitAura
 

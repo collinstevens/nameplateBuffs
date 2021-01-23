@@ -1,10 +1,10 @@
-local _, nameplateBuffs = ...
+local _, fPB = ...
 
 if GetLocale() ~= "deDE" then return end
 
 --You can help with translation at https://wow.curseforge.com/projects/nameplateBuffs/localization
 
-local L = nameplateBuffs.L
+local L = fPB.L
 
 L[" already in the list."] = "bereits auf der Liste."
 L[" ID changed "] = "ID geändert"

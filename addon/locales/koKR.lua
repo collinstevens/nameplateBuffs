@@ -1,10 +1,10 @@
-local _, nameplateBuffs = ...
+local _, fPB = ...
 
 if GetLocale() ~= "koKR" then return end
 
 --You can help with translation at https://wow.curseforge.com/projects/nameplateBuffs/localization
 
-local L = nameplateBuffs.L
+local L = fPB.L
 
 L[" already in the list."] = "이미 목록에 있습니다."
 L[" ID changed "] = "ID가 바뀌었습니다."
