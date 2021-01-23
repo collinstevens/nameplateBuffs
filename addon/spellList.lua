@@ -1,6 +1,6 @@
-local _, fPB = ...
+local _, nameplateBuffs = ...
 
-local defaultSpells1 = {--Important spells, add them with huge icons.
+local defaultLargeSpells = {--Important spells, add them with huge icons.
 
 	-- Mage
 	45438, --Ice Block
@@ -85,7 +85,7 @@ local defaultSpells1 = {--Important spells, add them with huge icons.
 
 }
 
-local defaultSpells2 = {--semi-important spells, add them with mid size icons.
+local defaultMediumSpells = {--semi-important spells, add them with mid size icons.
 
 	-- Mage
 	80353, --Timewarp
@@ -218,5 +218,15 @@ local defaultSpells2 = {--semi-important spells, add them with mid size icons.
 	67867, --Trampled (ToC arena spell when you run over someone)
 
 }
-fPB.defaultSpells1 = defaultSpells1
-fPB.defaultSpells2 = defaultSpells2
+
+local defaultHiddenSpells = {
+    -- Enchants
+    324260 -- Sinful Revelation
+
+    -- Warrior
+    262115 -- Deep Wounds
+}
+
+nameplateBuffs.defaultLargeSpells = defaultLargeSpells
+nameplateBuffs.defaultMediumSpells = defaultMediumSpells
+nameplateBuffs.defaultHiddenSpells = defaultHiddenSpells

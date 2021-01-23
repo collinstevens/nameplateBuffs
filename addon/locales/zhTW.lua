@@ -1,10 +1,10 @@
-local _, fPB = ...
+local _, nameplateBuffs = ...
 
 if GetLocale() ~= "zhTW" then return end
 
 --You can help with translation at https://wow.curseforge.com/projects/nameplateBuffs/localization
 
-local L = fPB.L
+local L = nameplateBuffs.L
 
 L[" already in the list."] = " 已經在清單中。"
 L[" ID changed "] = " ID 已變更 "
@@ -90,7 +90,7 @@ L["Neutrals"] = "中立"
 L["Never"] = "永不"
 L["No spell ID"] = "無法術ID"
 L["None"] = "無"
-L["Non-fPB duration options"] = "非插件的持續時間選項"
+L["Non-nameplateBuffs duration options"] = "非插件的持續時間選項"
 L["NPCs"] = "NPCs"
 L["Offset X"] = "水平偏移"
 L["Offset Y"] = "垂直偏移"

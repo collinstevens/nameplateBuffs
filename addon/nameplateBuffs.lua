@@ -1,39 +1,53 @@
-local AddonName, fPB = ...
-L = fPB.L
+local AddonName, nameplateBuffs = ...
+L = nameplateBuffs.L
 
 local	C_NamePlate_GetNamePlateForUnit, C_NamePlate_GetNamePlates, CreateFrame, UnitDebuff, UnitBuff, UnitName, UnitIsUnit, UnitIsPlayer, UnitPlayerControlled, UnitIsEnemy, UnitIsFriend, GetSpellInfo, table_sort, strmatch, format, wipe, pairs, GetTime, math_floor =
 		C_NamePlate.GetNamePlateForUnit, C_NamePlate.GetNamePlates, CreateFrame, UnitDebuff, UnitBuff, UnitName, UnitIsUnit, UnitIsPlayer, UnitPlayerControlled, UnitIsEnemy, UnitIsFriend, GetSpellInfo, table.sort, strmatch, format, wipe, pairs, GetTime, math.floor
 
-local defaultSpells1, defaultSpells2 = fPB.defaultSpells1, fPB.defaultSpells2
+local defaultLargeSpells  = nameplateBuffs.defaultLargeSpells
+local defaultMediumSpells = nameplateBuffs.defaultMediumSpells
+local defaultHiddenSpells = nameplateBuffs.defaultHiddenSpells
 
 local LSM = LibStub("LibSharedMedia-3.0")
-fPB.LSM = LSM
+nameplateBuffs.LSM = LSM
 local MSQ, Group
 
 local config = LibStub("AceConfig-3.0")
 local dialog = LibStub("AceConfigDialog-3.0")
 
-fPB.db = {}
+nameplateBuffs.db = {}
 local db
 
-local tooltip = CreateFrame("GameTooltip", "fPBMouseoverTooltip", UIParent, "GameTooltipTemplate")
+local tooltip = CreateFrame("GameTooltip", "nameplateBuffsMouseoverTooltip", UIParent, "GameTooltipTemplate")
 
-local fPBMainOptions
-local fPBSpellsList
-local fPBProfilesOptions
+local nameplateBuffsMainOptions
+local nameplateBuffsSpellsList
+local nameplateBuffsProfilesOptions
 
-fPB.chatColor = "|cFFFFA500"
-fPB.linkColor = "|cff71d5ff"
-local chatColor = fPB.chatColor
-local linkColor = fPB.linkColor
+nameplateBuffs.chatColor = "|cFFFFA500"
+nameplateBuffs.linkColor = "|cff71d5ff"
+local chatColor = nameplateBuffs.chatColor
+local linkColor = nameplateBuffs.linkColor
 
 local cachedSpells = {}
 local PlatesBuffs = {}
 
+local ENUN_SPELL_LIST_DISPLAY_ALL                 = 1
+local ENUM_SPELL_LIST_DISPLAY_MINE_AND_SPELL_LIST = 2
+local ENUM_SPELL_LIST_DISPLAY_ONLY_SPELL_LIST     = 3
+local ENUM_SPELL_LIST_DISPLAY_ONLY_MINE           = 4
+local ENUM_SPELL_LIST_DISPLAY_NONE                = 5
+
+local ENUM_SPELL_DISPLAY_ALWAYS   = 1
+local ENUM_SPELL_DISPLAY_MINE     = 2
+local ENUM_SPELL_DISPLAY_NEVER    = 3
+local ENUM_SPELL_DISPLAY_ON_ALLY  = 4
+local ENUM_SPELL_DISPLAY_ON_ENEMY = 5
+
 local DefaultSettings = {
 	profile = {
-		showDebuffs = 2,		-- 1 = all, 2 = mine + spellList, 3 = only spellList, 4 = only mine, 5 = none
-		showBuffs = 3,			-- 1 = all, 2 = mine + spellList, 3 = only spellList, 4 = only mine, 5 = none
+		showDebuffs = ENUM_SPELL_LIST_DISPLAY_MINE_AND_SPELL_LIST,
+		showBuffs = ENUM_SPELL_LIST_DISPLAY_ONLY_SPELL_LIST,
 		showTooltip = false,
 		hidePermanent = true,
 		notHideOnPersonalResource = true,
@@ -119,32 +133,47 @@ local DefaultSettings = {
 }
 
 do --add default spells
-for i=1, #defaultSpells1 do
-	local spellID = defaultSpells1[i]
-	local name = GetSpellInfo(spellID)
-	if name then
-		DefaultSettings.profile.Spells[spellID] = {
-			name = name,
-			spellID = spellID,
-			scale = 2,
-			durationSize = 18,
-			show = 1,	-- 1 = always, 2 = mine, 3 = never, 4 = on ally, 5 = on enemy
-			stackSize = 18,
-		}
-	end
-end
-
-for i=1, #defaultSpells2 do
-	local spellID = defaultSpells2[i]
+for i=1, #defaultLargeSpells do
+	local spellID = defaultLargeSpells[i]
 	local name = GetSpellInfo(spellID)
 	if name then
 		DefaultSettings.profile.Spells[spellID] = {
 			name = name,
 			spellID = spellID,
 			scale = 1.5,
+			durationSize = 18,
+			show = ENUM_SPELL_DISPLAY_ALWAYS,
+			stackSize = 18,
+		}
+	end
+end
+
+for i=1, #defaultMediumSpells do
+	local spellID = defaultMediumSpells[i]
+	local name = GetSpellInfo(spellID)
+	if name then
+		DefaultSettings.profile.Spells[spellID] = {
+			name = name,
+			spellID = spellID,
+			scale = 1.25,
 			durationSize = 14,
-			show = 1,	-- 1 = always, 2 = mine, 3 = never, 4 = on ally, 5 = on enemy
+			show = ENUM_SPELL_DISPLAY_ALWAYS,
 			stackSize = 14,
+		}
+	end
+end
+
+for i=1, #defaultHiddenSpells do
+	local spellId = defaultHiddenSpells[i]
+	local name = GetSpellInfo(spellId)
+	if name then
+		DefaultSettings.profile.Spells[spellId] = {
+			name = name,
+			spellID = spellId,
+			scale = 1.0,
+			durationSize = 10,
+			show = ENUM_SPELL_DISPLAY_NEVER,
+			stackSize = 10,
 		}
 	end
 end
@@ -213,12 +242,12 @@ end
 
 local function DrawOnPlate(frame)
 
-	if not (#frame.fPBiconsFrame.iconsFrame > 0) then return end
+	if not (#frame.nameplateBuffsiconsFrame.iconsFrame > 0) then return end
 
 	local maxWidth = 0
 	local sumHeight = 0
 
-	local buffIcon = frame.fPBiconsFrame.iconsFrame
+	local buffIcon = frame.nameplateBuffsiconsFrame.iconsFrame
 
 	local breaked = false
 	for l = 1, db.numLines do
@@ -233,7 +262,7 @@ local function DrawOnPlate(frame)
 			if not buffIcon[i] or not buffIcon[i]:IsShown() then breaked = true; break end
 			buffIcon[i]:ClearAllPoints()
 			if l == 1 and k == 1 then
-				buffIcon[i]:SetPoint("BOTTOMLEFT", frame.fPBiconsFrame, "BOTTOMLEFT", 0, 0)
+				buffIcon[i]:SetPoint("BOTTOMLEFT", frame.nameplateBuffsiconsFrame, "BOTTOMLEFT", 0, 0)
 			elseif k == 1 then
 				buffIcon[i]:SetPoint("BOTTOMLEFT", buffIcon[i-db.buffPerLine], "TOPLEFT", 0, db.yInterval)
 			else
@@ -251,10 +280,10 @@ local function DrawOnPlate(frame)
 			buffIcon[i]:Hide()
 		end
 	end
-	frame.fPBiconsFrame:SetWidth(maxWidth-db.xInterval)
-	frame.fPBiconsFrame:SetHeight(sumHeight - db.yInterval)
-	frame.fPBiconsFrame:ClearAllPoints()
-	frame.fPBiconsFrame:SetPoint(db.buffAnchorPoint,frame,db.plateAnchorPoint,db.xOffset,db.yOffset)
+	frame.nameplateBuffsiconsFrame:SetWidth(maxWidth-db.xInterval)
+	frame.nameplateBuffsiconsFrame:SetHeight(sumHeight - db.yInterval)
+	frame.nameplateBuffsiconsFrame:ClearAllPoints()
+	frame.nameplateBuffsiconsFrame:SetPoint(db.buffAnchorPoint,frame,db.plateAnchorPoint,db.xOffset,db.yOffset)
 	if MSQ then
 		Group:ReSkin()
 	end
@@ -460,22 +489,22 @@ local function UpdateBuffIcon(self)
 
 	if db.showDuration and self.expiration > 0 then
 		if db.durationPosition == 1 or db.durationPosition == 3 then
-			self.durationtext:SetFont(fPB.font, (self.durationSize or db.durationSize), "NORMAL")
+			self.durationtext:SetFont(nameplateBuffs.font, (self.durationSize or db.durationSize), "NORMAL")
 			self.durationBg:Show()
 		else
-			self.durationtext:SetFont(fPB.font, (self.durationSize or db.durationSize), "OUTLINE")
+			self.durationtext:SetFont(nameplateBuffs.font, (self.durationSize or db.durationSize), "OUTLINE")
 		end
 		self.durationtext:Show()
 	end
 	if self.stack > 1 then
 		self.stacktext:SetText(tostring(self.stack))
 		if db.stackPosition == 2 or db.stackPosition == 3 then
-			self.stacktext:SetFont(fPB.stackFont, (self.stackSize or db.stackSize), "NORMAL")
+			self.stacktext:SetFont(nameplateBuffs.stackFont, (self.stackSize or db.stackSize), "NORMAL")
 			self.stackBg:SetWidth(self.stacktext:GetStringWidth())
 			self.stackBg:SetHeight(self.stacktext:GetStringHeight())
 			self.stackBg:Show()
 		else
-			self.stacktext:SetFont(fPB.stackFont, (self.stackSize or db.stackSize), "OUTLINE")
+			self.stacktext:SetFont(nameplateBuffs.stackFont, (self.stackSize or db.stackSize), "OUTLINE")
 		end
 		self.stacktext:Show()
 	end
@@ -508,17 +537,17 @@ local function UpdateBuffIconOptions(self)
 		self.durationBg:ClearAllPoints()
 		if db.durationPosition == 1 then
 			-- under icon
-			self.durationtext:SetFont(fPB.font, (self.durationSize or db.durationSize), "NORMAL")
+			self.durationtext:SetFont(nameplateBuffs.font, (self.durationSize or db.durationSize), "NORMAL")
 			self.durationtext:SetPoint("TOP", self, "BOTTOM", 0, -1)
 			self.durationBg:SetPoint("CENTER", self.durationtext)
 		elseif db.durationPosition == 3 then
 			-- above icon
-			self.durationtext:SetFont(fPB.font, (self.durationSize or db.durationSize), "NORMAL")
+			self.durationtext:SetFont(nameplateBuffs.font, (self.durationSize or db.durationSize), "NORMAL")
 			self.durationtext:SetPoint("BOTTOM", self, "TOP", 0, 1)
 			self.durationBg:SetPoint("CENTER", self.durationtext)
 		else
 			-- on icon
-			self.durationtext:SetFont(fPB.font, (self.durationSize or db.durationSize), "OUTLINE")
+			self.durationtext:SetFont(nameplateBuffs.font, (self.durationSize or db.durationSize), "OUTLINE")
 			self.durationtext:SetPoint("CENTER", self, "CENTER", 0, 0)
 		end
 		if not colorTransition then
@@ -531,16 +560,16 @@ local function UpdateBuffIconOptions(self)
 	self.stacktext:SetTextColor(db.stackColor[1],db.stackColor[2],db.stackColor[3],1)
 	if db.stackPosition == 1 then
 		-- on icon
-		self.stacktext:SetFont(fPB.stackFont, (self.stackSize or db.stackSize), "OUTLINE")
+		self.stacktext:SetFont(nameplateBuffs.stackFont, (self.stackSize or db.stackSize), "OUTLINE")
 		self.stacktext:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", -1, 3)
 	elseif db.stackPosition == 2 then
 		-- under icon
-		self.stacktext:SetFont(fPB.stackFont, (self.stackSize or db.stackSize), "NORMAL")
+		self.stacktext:SetFont(nameplateBuffs.stackFont, (self.stackSize or db.stackSize), "NORMAL")
 		self.stacktext:SetPoint("TOP", self, "BOTTOM", 0, -1)
 		self.stackBg:SetPoint("CENTER", self.stacktext)
 	else
 		-- above icon
-		self.stacktext:SetFont(fPB.stackFont, (self.stackSize or db.stackSize), "NORMAL")
+		self.stacktext:SetFont(nameplateBuffs.stackFont, (self.stackSize or db.stackSize), "NORMAL")
 		self.stacktext:SetPoint("BOTTOM", self, "TOP", 0, 1)
 		self.stackBg:SetPoint("CENTER", self.stacktext)
 	end
@@ -565,9 +594,9 @@ local function iconOnHide(self)
 	self.stackBg:Hide()
 end
 local function CreateBuffIcon(frame,i)
-	frame.fPBiconsFrame.iconsFrame[i] = CreateFrame("Button")
-	frame.fPBiconsFrame.iconsFrame[i]:SetParent(frame.fPBiconsFrame)
-	local buffIcon = frame.fPBiconsFrame.iconsFrame[i]
+	frame.nameplateBuffsiconsFrame.iconsFrame[i] = CreateFrame("Button")
+	frame.nameplateBuffsiconsFrame.iconsFrame[i]:SetParent(frame.nameplateBuffsiconsFrame)
+	local buffIcon = frame.nameplateBuffsiconsFrame.iconsFrame[i]
 
 	buffIcon.texture = buffIcon:CreateTexture(nil, "BACKGROUND")
 
@@ -626,16 +655,16 @@ local function UpdateUnitAuras(nameplateID,updateOptions)
 	if not frame then return end 	-- modifying friendly nameplates is restricted in instances since 7.2
 
 	if FilterUnits(nameplateID) then
-		if frame.fPBiconsFrame then
-			frame.fPBiconsFrame:Hide()
+		if frame.nameplateBuffsiconsFrame then
+			frame.nameplateBuffsiconsFrame:Hide()
 		end
 		return
 	end
 
 	ScanUnitBuffs(nameplateID, frame)
 	if not PlatesBuffs[frame] then
-		if frame.fPBiconsFrame then
-			frame.fPBiconsFrame:Hide()
+		if frame.nameplateBuffsiconsFrame then
+			frame.nameplateBuffsiconsFrame:Hide()
 		end
 		return
 	end
@@ -643,10 +672,10 @@ local function UpdateUnitAuras(nameplateID,updateOptions)
 		table_sort(PlatesBuffs[frame],SortFunc)
 	end
 
-	if not frame.fPBiconsFrame then
+	if not frame.nameplateBuffsiconsFrame then
 		-- if parent == frame then it will change scale and alpha with nameplates
 		-- otherwise use UIParent, but this causes mess of icon/border textures
-		frame.fPBiconsFrame = CreateFrame("Frame")
+		frame.nameplateBuffsiconsFrame = CreateFrame("Frame")
 		local parent = db.parentWorldFrame and WorldFrame
 		if not parent then
 			parent = frame.unitFrame -- for ElvUI
@@ -657,21 +686,21 @@ local function UpdateUnitAuras(nameplateID,updateOptions)
 		if not parent then
 			parent = frame
 		end
-		frame.fPBiconsFrame:SetParent(parent)
+		frame.nameplateBuffsiconsFrame:SetParent(parent)
 	end
-	if not frame.fPBiconsFrame.iconsFrame then
-		frame.fPBiconsFrame.iconsFrame = {}
+	if not frame.nameplateBuffsiconsFrame.iconsFrame then
+		frame.nameplateBuffsiconsFrame.iconsFrame = {}
 	end
 
 
 
 	for i = 1, #PlatesBuffs[frame] do
-		if not frame.fPBiconsFrame.iconsFrame[i] then
+		if not frame.nameplateBuffsiconsFrame.iconsFrame[i] then
 			CreateBuffIcon(frame,i)
 		end
 
 		local buff = PlatesBuffs[frame][i]
-		local buffIcon = frame.fPBiconsFrame.iconsFrame[i]
+		local buffIcon = frame.nameplateBuffsiconsFrame.iconsFrame[i]
 		buffIcon.type = buff.type
 		buffIcon.icon = buff.icon
 		buffIcon.stack = buff.stack
@@ -689,12 +718,12 @@ local function UpdateUnitAuras(nameplateID,updateOptions)
 		UpdateBuffIcon(buffIcon)
 		buffIcon:Show()
 	end
-	frame.fPBiconsFrame:Show()
+	frame.nameplateBuffsiconsFrame:Show()
 
-	if #frame.fPBiconsFrame.iconsFrame > #PlatesBuffs[frame] then
-		for i = #PlatesBuffs[frame]+1, #frame.fPBiconsFrame.iconsFrame do
-			if frame.fPBiconsFrame.iconsFrame[i] then
-				frame.fPBiconsFrame.iconsFrame[i]:Hide()
+	if #frame.nameplateBuffsiconsFrame.iconsFrame > #PlatesBuffs[frame] then
+		for i = #PlatesBuffs[frame]+1, #frame.nameplateBuffsiconsFrame.iconsFrame do
+			if frame.nameplateBuffsiconsFrame.iconsFrame[i] then
+				frame.nameplateBuffsiconsFrame.iconsFrame[i]:Hide()
 			end
 		end
 	end
@@ -702,7 +731,7 @@ local function UpdateUnitAuras(nameplateID,updateOptions)
 	DrawOnPlate(frame)
 end
 
-function fPB.UpdateAllNameplates(updateOptions)
+function nameplateBuffs.UpdateAllNameplates(updateOptions)
 	for i, p in ipairs(C_NamePlate_GetNamePlates()) do
 		local unit = p.namePlateUnitToken
 		if not unit then --try ElvUI
@@ -713,7 +742,7 @@ function fPB.UpdateAllNameplates(updateOptions)
 		end
 	end
 end
-local UpdateAllNameplates = fPB.UpdateAllNameplates
+local UpdateAllNameplates = nameplateBuffs.UpdateAllNameplates
 
 local function Nameplate_Added(...)
 	local nameplateID = ...
@@ -732,8 +761,8 @@ local function Nameplate_Removed(...)
 	local nameplateID = ...
 	local frame = C_NamePlate_GetNamePlateForUnit(nameplateID)
 
-	if frame.fPBiconsFrame then
-		frame.fPBiconsFrame:Hide()
+	if frame.nameplateBuffsiconsFrame then
+		frame.nameplateBuffsiconsFrame:Hide()
 	end
 	if PlatesBuffs[frame] then
 		PlatesBuffs[frame] = nil
@@ -754,7 +783,7 @@ local function FixSpells()
 		end
 	end
 end
-function fPB.CacheSpells() -- spells filtered by names, not checking id
+function nameplateBuffs.CacheSpells() -- spells filtered by names, not checking id
 	cachedSpells = {}
 	for spell,s in pairs(db.Spells) do
 		if not s.checkID and not db.ignoredDefaultSpells[spell] and s.name then
@@ -766,9 +795,9 @@ function fPB.CacheSpells() -- spells filtered by names, not checking id
 		end
 	end
 end
-local CacheSpells = fPB.CacheSpells
+local CacheSpells = nameplateBuffs.CacheSpells
 
-function fPB.AddNewSpell(spell)
+function nameplateBuffs.AddNewSpell(spell)
 	local defaultSpell
 	if db.ignoredDefaultSpells[spell] then
 		db.ignoredDefaultSpells[spell] = nil
@@ -807,19 +836,19 @@ function fPB.AddNewSpell(spell)
 	end
 
 	CacheSpells()
-	fPB.BuildSpellList()
+	nameplateBuffs.BuildSpellList()
 	UpdateAllNameplates(true)
 end
-function fPB.RemoveSpell(spell)
+function nameplateBuffs.RemoveSpell(spell)
 	if DefaultSettings.profile.Spells[spell] then
 		db.ignoredDefaultSpells[spell] = true
 	end
 	db.Spells[spell] = nil
 	CacheSpells()
-	fPB.BuildSpellList()
+	nameplateBuffs.BuildSpellList()
 	UpdateAllNameplates(true)
 end
-function fPB.ChangeSpellID(oldID, newID)
+function nameplateBuffs.ChangeSpellID(oldID, newID)
 	if db.Spells[newID] then
 		DEFAULT_CHAT_FRAME:AddMessage(chatColor..L["Spell with this ID is already in the list. Its name is "]..linkColor.."|Hspell:"..newID.."|h["..GetSpellInfo(newID).."]|h|r")
 		return
@@ -829,10 +858,10 @@ function fPB.ChangeSpellID(oldID, newID)
 		db.Spells[newID][k] = v
 		db.Spells[newID].spellID = newID
 	end
-	fPB.RemoveSpell(oldID)
+	nameplateBuffs.RemoveSpell(oldID)
 	DEFAULT_CHAT_FRAME:AddMessage(GetSpellInfo(newID)..chatColor..L[" ID changed "].."|r"..(tonumber(oldID) or "nil")..chatColor.." -> |r"..newID)
 	UpdateAllNameplates(true)
-	fPB.BuildSpellList()
+	nameplateBuffs.BuildSpellList()
 end
 
 local function ConvertDBto2()
@@ -843,17 +872,17 @@ local function ConvertDBto2()
 			for n,s in pairs(p.Spells) do
 				local spellID = s.spellID
 				if not spellID then
-					for i=1, #defaultSpells1 do
-						if n == GetSpellInfo(defaultSpells1[i]) then
-							spellID = defaultSpells1[i]
+					for i=1, #defaultLargeSpells do
+						if n == GetSpellInfo(defaultLargeSpells[i]) then
+							spellID = defaultLargeSpells[i]
 							break
 						end
 					end
 				end
 				if not spellID then
-					for i=1, #defaultSpells2 do
-						if n == GetSpellInfo(defaultSpells2[i]) then
-							spellID = defaultSpells2[i]
+					for i=1, #defaultMediumSpells do
+						if n == GetSpellInfo(defaultMediumSpells[i]) then
+							spellID = defaultMediumSpells[i]
 							break
 						end
 					end
@@ -874,16 +903,16 @@ local function ConvertDBto2()
 			temp = {}
 			for n,v in pairs(p.ignoredDefaultSpells) do
 				local spellID
-				for i=1, #defaultSpells1 do
-					if n == GetSpellInfo(defaultSpells1[i]) then
-						spellID = defaultSpells1[i]
+				for i=1, #defaultLargeSpells do
+					if n == GetSpellInfo(defaultLargeSpells[i]) then
+						spellID = defaultLargeSpells[i]
 						break
 					end
 				end
 				if not spellID then
-					for i=1, #defaultSpells2 do
-						if n == GetSpellInfo(defaultSpells2[i]) then
-							spellID = defaultSpells2[i]
+					for i=1, #defaultMediumSpells do
+						if n == GetSpellInfo(defaultMediumSpells[i]) then
+							spellID = defaultMediumSpells[i]
 							break
 						end
 					end
@@ -898,9 +927,9 @@ local function ConvertDBto2()
 	end
 	nameplateBuffsDB.version = 2
 end
-function fPB.OnProfileChanged()
-	db = fPB.db.profile
-	fPB.OptionsOnEnable()
+function nameplateBuffs.OnProfileChanged()
+	db = nameplateBuffs.db.profile
+	nameplateBuffs.OptionsOnEnable()
 	UpdateAllNameplates(true)
 end
 local function Initialize()
@@ -908,54 +937,54 @@ local function Initialize()
 		ConvertDBto2()
 	end
 
-	fPB.db = LibStub("AceDB-3.0"):New("nameplateBuffsDB", DefaultSettings, true)
-	fPB.db.RegisterCallback(fPB, "OnProfileChanged", "OnProfileChanged")
-	fPB.db.RegisterCallback(fPB, "OnProfileCopied", "OnProfileChanged")
-	fPB.db.RegisterCallback(fPB, "OnProfileReset", "OnProfileChanged")
+	nameplateBuffs.db = LibStub("AceDB-3.0"):New("nameplateBuffsDB", DefaultSettings, true)
+	nameplateBuffs.db.RegisterCallback(nameplateBuffs, "OnProfileChanged", "OnProfileChanged")
+	nameplateBuffs.db.RegisterCallback(nameplateBuffs, "OnProfileCopied", "OnProfileChanged")
+	nameplateBuffs.db.RegisterCallback(nameplateBuffs, "OnProfileReset", "OnProfileChanged")
 
-	db = fPB.db.profile
-	fPB.font = fPB.LSM:Fetch("font", db.font)
-	fPB.stackFont = fPB.LSM:Fetch("font", db.stackFont)
+	db = nameplateBuffs.db.profile
+	nameplateBuffs.font = nameplateBuffs.LSM:Fetch("font", db.font)
+	nameplateBuffs.stackFont = nameplateBuffs.LSM:Fetch("font", db.stackFont)
 	FixSpells()
 	CacheSpells()
 
-	config:RegisterOptionsTable(AddonName, fPB.MainOptionTable)
-	fPBMainOptions = dialog:AddToBlizOptions(AddonName, AddonName)
+	config:RegisterOptionsTable(AddonName, nameplateBuffs.MainOptionTable)
+	nameplateBuffsMainOptions = dialog:AddToBlizOptions(AddonName, AddonName)
 
-	config:RegisterOptionsTable(AddonName.." Spells", fPB.SpellsTable)
-	fPBSpellsList = dialog:AddToBlizOptions(AddonName.." Spells", L["Specific spells"], AddonName)
+	config:RegisterOptionsTable(AddonName.." Spells", nameplateBuffs.SpellsTable)
+	nameplateBuffsSpellsList = dialog:AddToBlizOptions(AddonName.." Spells", L["Specific spells"], AddonName)
 
-	config:RegisterOptionsTable(AddonName.." Profiles", LibStub("AceDBOptions-3.0"):GetOptionsTable(fPB.db))
-	fPBProfilesOptions = dialog:AddToBlizOptions(AddonName.." Profiles", L["Profiles"], AddonName)
+	config:RegisterOptionsTable(AddonName.." Profiles", LibStub("AceDBOptions-3.0"):GetOptionsTable(nameplateBuffs.db))
+	nameplateBuffsProfilesOptions = dialog:AddToBlizOptions(AddonName.." Profiles", L["Profiles"], AddonName)
 
 	SLASH_NAMEPLATEBUFFS1, SLASH_NAMEPLATEBUFFS2 = "/npb", "/pb"
 	function SlashCmdList.NAMEPLATEBUFFS(msg, editBox)
-		InterfaceOptionsFrame_OpenToCategory(fPBMainOptions)
-		InterfaceOptionsFrame_OpenToCategory(fPBSpellsList)
-		InterfaceOptionsFrame_OpenToCategory(fPBMainOptions)
+		InterfaceOptionsFrame_OpenToCategory(nameplateBuffsMainOptions)
+		InterfaceOptionsFrame_OpenToCategory(nameplateBuffsSpellsList)
+		InterfaceOptionsFrame_OpenToCategory(nameplateBuffsMainOptions)
 	end
 end
 
-function fPB.RegisterCombat()
-	fPB.Events:RegisterEvent("PLAYER_REGEN_DISABLED")
-	fPB.Events:RegisterEvent("PLAYER_REGEN_ENABLED")
+function nameplateBuffs.RegisterCombat()
+	nameplateBuffs.Events:RegisterEvent("PLAYER_REGEN_DISABLED")
+	nameplateBuffs.Events:RegisterEvent("PLAYER_REGEN_ENABLED")
 end
-function fPB.UnregisterCombat()
-	fPB.Events:UnregisterEvent("PLAYER_REGEN_DISABLED")
-	fPB.Events:UnregisterEvent("PLAYER_REGEN_ENABLED")
+function nameplateBuffs.UnregisterCombat()
+	nameplateBuffs.Events:UnregisterEvent("PLAYER_REGEN_DISABLED")
+	nameplateBuffs.Events:UnregisterEvent("PLAYER_REGEN_ENABLED")
 end
 
-fPB.Events = CreateFrame("Frame")
-fPB.Events:RegisterEvent("ADDON_LOADED")
-fPB.Events:RegisterEvent("PLAYER_LOGIN")
+nameplateBuffs.Events = CreateFrame("Frame")
+nameplateBuffs.Events:RegisterEvent("ADDON_LOADED")
+nameplateBuffs.Events:RegisterEvent("PLAYER_LOGIN")
 
-fPB.Events:SetScript("OnEvent", function(self, event, ...)
+nameplateBuffs.Events:SetScript("OnEvent", function(self, event, ...)
 	if event == "ADDON_LOADED" and (...) == AddonName then
 		Initialize()
 	elseif event == "PLAYER_LOGIN" then
-		fPB.OptionsOnEnable()
-		fPB.FixBlizzard()
-		if db.showSpellID then fPB.ShowSpellID() end
+		nameplateBuffs.OptionsOnEnable()
+		nameplateBuffs.FixBlizzard()
+		if db.showSpellID then nameplateBuffs.ShowSpellID() end
 		MSQ = LibStub("Masque", true)
 		if MSQ then
 			Group = MSQ:Group(AddonName)
@@ -966,19 +995,19 @@ fPB.Events:SetScript("OnEvent", function(self, event, ...)
 			end)
 		end
 
-		fPB.Events:RegisterEvent("NAME_PLATE_UNIT_ADDED")
-		fPB.Events:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
+		nameplateBuffs.Events:RegisterEvent("NAME_PLATE_UNIT_ADDED")
+		nameplateBuffs.Events:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
 
 		if db.showOnlyInCombat then
-			fPB.RegisterCombat()
+			nameplateBuffs.RegisterCombat()
 		else
-			fPB.Events:RegisterEvent("UNIT_AURA")
+			nameplateBuffs.Events:RegisterEvent("UNIT_AURA")
 		end
 	elseif event == "PLAYER_REGEN_DISABLED" then
-		fPB.Events:RegisterEvent("UNIT_AURA")
+		nameplateBuffs.Events:RegisterEvent("UNIT_AURA")
 		UpdateAllNameplates()
 	elseif event == "PLAYER_REGEN_ENABLED" then
-		fPB.Events:UnregisterEvent("UNIT_AURA")
+		nameplateBuffs.Events:UnregisterEvent("UNIT_AURA")
 		UpdateAllNameplates()
 	elseif event == "NAME_PLATE_UNIT_ADDED" then
 		Nameplate_Added(...)

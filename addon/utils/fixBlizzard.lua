@@ -1,8 +1,8 @@
-local _, fPB = ...
+local _, nameplateBuffs = ...
 
-function fPB.FixBlizzard()	--some fixes to blizzard nameplates behaviour
+function nameplateBuffs.FixBlizzard()	--some fixes to blizzard nameplates behaviour
 
-	db = fPB.db.profile
+	db = nameplateBuffs.db.profile
 
 	if db.nameplateMaxDistance then
 		SetCVar("nameplateMaxDistance",db.nameplateMaxDistance)
@@ -28,12 +28,12 @@ function fPB.FixBlizzard()	--some fixes to blizzard nameplates behaviour
 				-- _G["DefaultCompactNamePlate"..v1.."FrameOptions"][v2] = false
 			-- end
 		-- end
-		fPB.FixNames()
+		nameplateBuffs.FixNames()
 	end
 end
 
 local hooked
-function fPB.FixNames()
+function nameplateBuffs.FixNames()
 	if hooked then return end
 
 	hooksecurefunc("CompactUnitFrame_UpdateName", function(frame)

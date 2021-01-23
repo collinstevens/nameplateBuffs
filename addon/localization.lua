@@ -1,7 +1,7 @@
-local _, fPB = ...
+local _, nameplateBuffs = ...
 
 local L = setmetatable({}, {__index = function(L,key)
 	return key
 end})
 
-fPB.L = L
+nameplateBuffs.L = L
