@@ -4,7 +4,7 @@ L = fPB.L
 local	C_NamePlate_GetNamePlateForUnit, C_NamePlate_GetNamePlates, CreateFrame, UnitDebuff, UnitBuff, UnitName, UnitIsUnit, UnitIsPlayer, UnitPlayerControlled, UnitIsEnemy, UnitIsFriend, GetSpellInfo, table_sort, strmatch, format, wipe, pairs, GetTime, math_floor =
 		C_NamePlate.GetNamePlateForUnit, C_NamePlate.GetNamePlates, CreateFrame, UnitDebuff, UnitBuff, UnitName, UnitIsUnit, UnitIsPlayer, UnitPlayerControlled, UnitIsEnemy, UnitIsFriend, GetSpellInfo, table.sort, strmatch, format, wipe, pairs, GetTime, math.floor
 
-local defaultSpells1, defaultSpells2 = fPB.defaultSpells1, fPB.defaultSpells2
+local defaultLargeSpells, defaultMediumSpells, defaultHiddenSpells = fPB.defaultLargeSpells, fPB.defaultMediumSpells, fPB.defaultHiddenSpells
 
 local LSM = LibStub("LibSharedMedia-3.0")
 fPB.LSM = LSM
@@ -30,10 +30,22 @@ local linkColor = fPB.linkColor
 local cachedSpells = {}
 local PlatesBuffs = {}
 
+local ENUN_SPELL_LIST_DISPLAY_ALL                 = 1
+local ENUM_SPELL_LIST_DISPLAY_MINE_AND_SPELL_LIST = 2
+local ENUM_SPELL_LIST_DISPLAY_ONLY_SPELL_LIST     = 3
+local ENUM_SPELL_LIST_DISPLAY_ONLY_MINE           = 4
+local ENUM_SPELL_LIST_DISPLAY_NONE                = 5
+
+local ENUM_SPELL_DISPLAY_ALWAYS   = 1
+local ENUM_SPELL_DISPLAY_MINE     = 2
+local ENUM_SPELL_DISPLAY_NEVER    = 3
+local ENUM_SPELL_DISPLAY_ON_ALLY  = 4
+local ENUM_SPELL_DISPLAY_ON_ENEMY = 5
+
 local DefaultSettings = {
 	profile = {
-		showDebuffs = 2,		-- 1 = all, 2 = mine + spellList, 3 = only spellList, 4 = only mine, 5 = none
-		showBuffs = 3,			-- 1 = all, 2 = mine + spellList, 3 = only spellList, 4 = only mine, 5 = none
+		showDebuffs = ENUM_SPELL_LIST_DISPLAY_MINE_AND_SPELL_LIST,
+		showBuffs = ENUM_SPELL_LIST_DISPLAY_ONLY_SPELL_LIST,
 		showTooltip = false,
 		hidePermanent = true,
 		notHideOnPersonalResource = true,
@@ -119,8 +131,8 @@ local DefaultSettings = {
 }
 
 do --add default spells
-for i=1, #defaultSpells1 do
-	local spellID = defaultSpells1[i]
+for i=1, #defaultLargeSpells do
+	local spellID = defaultLargeSpells[i]
 	local name = GetSpellInfo(spellID)
 	if name then
 		DefaultSettings.profile.Spells[spellID] = {
@@ -134,8 +146,8 @@ for i=1, #defaultSpells1 do
 	end
 end
 
-for i=1, #defaultSpells2 do
-	local spellID = defaultSpells2[i]
+for i=1, #defaultMediumSpells do
+	local spellID = defaultMediumSpells[i]
 	local name = GetSpellInfo(spellID)
 	if name then
 		DefaultSettings.profile.Spells[spellID] = {
@@ -144,6 +156,21 @@ for i=1, #defaultSpells2 do
 			scale = 1.5,
 			durationSize = 14,
 			show = 1,	-- 1 = always, 2 = mine, 3 = never, 4 = on ally, 5 = on enemy
+			stackSize = 14,
+		}
+	end
+end
+
+for i=1, #defaultHiddenSpells do
+	local spellID = defaultHiddenSpells[i]
+	local name = GetSpellInfo(spellID)
+	if name then
+		DefaultSettings.profile.Spells[spellID] = {
+			name = name,
+			spellID = spellID,
+			scale = 1.0,
+			durationSize = 14,
+			show = 3,	-- 1 = always, 2 = mine, 3 = never, 4 = on ally, 5 = on enemy
 			stackSize = 14,
 		}
 	end
@@ -843,17 +870,17 @@ local function ConvertDBto2()
 			for n,s in pairs(p.Spells) do
 				local spellID = s.spellID
 				if not spellID then
-					for i=1, #defaultSpells1 do
-						if n == GetSpellInfo(defaultSpells1[i]) then
-							spellID = defaultSpells1[i]
+					for i=1, #defaultLargeSpells do
+						if n == GetSpellInfo(defaultLargeSpells[i]) then
+							spellID = defaultLargeSpells[i]
 							break
 						end
 					end
 				end
 				if not spellID then
-					for i=1, #defaultSpells2 do
-						if n == GetSpellInfo(defaultSpells2[i]) then
-							spellID = defaultSpells2[i]
+					for i=1, #defaultMediumSpells do
+						if n == GetSpellInfo(defaultMediumSpells[i]) then
+							spellID = defaultMediumSpells[i]
 							break
 						end
 					end
@@ -874,16 +901,16 @@ local function ConvertDBto2()
 			temp = {}
 			for n,v in pairs(p.ignoredDefaultSpells) do
 				local spellID
-				for i=1, #defaultSpells1 do
-					if n == GetSpellInfo(defaultSpells1[i]) then
-						spellID = defaultSpells1[i]
+				for i=1, #defaultLargeSpells do
+					if n == GetSpellInfo(defaultLargeSpells[i]) then
+						spellID = defaultLargeSpells[i]
 						break
 					end
 				end
 				if not spellID then
-					for i=1, #defaultSpells2 do
-						if n == GetSpellInfo(defaultSpells2[i]) then
-							spellID = defaultSpells2[i]
+					for i=1, #defaultMediumSpells do
+						if n == GetSpellInfo(defaultMediumSpells[i]) then
+							spellID = defaultMediumSpells[i]
 							break
 						end
 					end
