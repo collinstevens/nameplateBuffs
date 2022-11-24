@@ -412,11 +412,11 @@ local function iconOnUpdate(self, elapsed)
 				end
 			end
 			if (timeLeft / (self.duration + 0.01) ) < db.blinkTimeleft and timeLeft < 60 then --buff only has 20% timeleft and is less then 60 seconds.
-				local f = GetTime() % 1
-				if f > 0.5 then
-					f = 1 - f
+				local alpha = GetTime() % 1
+				if alpha > 0.5 then
+					alpha = 1 - alpha
 				end
-				self:SetAlpha(f * 3)
+				self:SetAlpha(Clamp(alpha * 3, 0, 1))
 			end
 			IsSafeToCallIsMouseOver, IsMouseOver = pcall(safeIsMouseOver)
 			if IsSafeToCallIsMouseOver and IsMouseOver and db.showTooltip and tooltip:IsShown() then
