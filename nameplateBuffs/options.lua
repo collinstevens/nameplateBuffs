@@ -4,8 +4,8 @@ local L = fPB.L
 local db = {}
 local UpdateAllNameplates = fPB.UpdateAllNameplates
 
-local 	GetSpellInfo, tonumber, pairs, table_sort, table_insert =
-		GetSpellInfo, tonumber, pairs, table.sort, table.insert
+local 	GetSpellInfo, GetSpellTexture, tonumber, pairs, table_sort, table_insert =
+		GetSpellInfo, GetSpellTexture, tonumber, pairs, table.sort, table.insert
 local	DISABLE = DISABLE
 local chatColor = fPB.chatColor
 local linkColor = fPB.linkColor
@@ -952,23 +952,12 @@ fPB.SpellsTable = {
 
 local color
 local iconTexture
-local TextureStringCache = {}
-local description
-local function TextureString(spellID)
-	if not tonumber(spellID) then
-		return "\124TInterface\\Icons\\Inv_misc_questionmark:0\124t"
-	elseif TextureStringCache[spellID] then
-		return TextureStringCache[spellID]
-	else
-		_,_,iconTexture = GetSpellInfo(spellID)
-		if iconTexture then
-			iconTexture = "\124T"..iconTexture..":0\124t"
-			TextureStringCache[spellID] = iconTexture
-			return iconTexture
-		else
-			return "\124TInterface\\Icons\\Inv_misc_questionmark:0\124t"
-		end
+local function SpellTexture(spellID)
+	iconTexture = GetSpellTexture(spellID)
+	if not iconTexture then
+		return 134400 -- Inv_misc_questionmark
 	end
+	return iconTexture
 end
 local function SortSpellList(a,b)
 	if (a and b) then
@@ -1010,7 +999,7 @@ function fPB.BuildSpellList()
 			color = "|cFFFFFF00" --yellow
 		end
 
-		iconTexture = TextureString(SpellID)
+		iconTexture = SpellTexture(SpellID)
 
 		if tonumber(SpellID) then
 			tooltip:SetHyperlink("spell:"..SpellID)
@@ -1022,7 +1011,7 @@ function fPB.BuildSpellList()
 			spellDesc = L["No spell ID"]
 		end
 
-		local buildName = iconTexture.." "..color..name.." (x"..(Spell.scale or "1")..")"
+		local buildName = color..name.." (x"..(Spell.scale or "1")..")"
 		if tonumber(SpellID) then
 			buildName = buildName.."  id:"..SpellID.."|r"
 		else
@@ -1031,6 +1020,7 @@ function fPB.BuildSpellList()
 
 		spellTable[tostring(s)] = {
 			name = buildName,
+			icon = iconTexture,
 			desc = spellDesc,
 			type = "group",
 			order = 10 + i,
